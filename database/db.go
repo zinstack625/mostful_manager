@@ -33,7 +33,7 @@ func (d *_db) initTables() {
 
 func (d *_db) GetMentorById(ctx context.Context, key int64) (*Mentor, error) {
 	ment := new(Mentor)
-	err := d.db.NewSelect().Model(ment).Where("ID = ?", key).Scan(ctx)
+	err := d.db.NewSelect().Model(ment).Where("ID = ?", key).Relation("Labs").Relation("DoneLabs").Scan(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func (d *_db) GetMentorById(ctx context.Context, key int64) (*Mentor, error) {
 
 func (d *_db) GetMentorByTag(ctx context.Context, key string) (*Mentor, error) {
 	ment := new(Mentor)
-	err := d.db.NewSelect().Model(ment).Where("TAG = ?", key).Scan(ctx)
+	err := d.db.NewSelect().Model(ment).Where("TAG = ?", key).Relation("Labs").Relation("DoneLabs").Scan(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -50,11 +50,17 @@ func (d *_db) GetMentorByTag(ctx context.Context, key string) (*Mentor, error) {
 }
 
 func (d *_db) AddMentor(ctx context.Context, ment *Mentor) error {
-	_, err := d.db.NewInsert().Model(ment).Exec(ctx)
+	d.db.NewRaw("SELECT AVG(LOAD) FROM MENTORS").Scan(ctx, &ment.Load)
+	_, err := d.db.NewInsert().Model(ment).On("CONFLICT DO NOTHING").Exec(ctx)
 	if err != nil {
 		return err
 	}
 	err = d.db.NewSelect().Model(ment).Where("TAG = ?", ment.Tag).Scan(ctx)
+	return err
+}
+
+func (d *_db) RemoveMentor(ctx context.Context, ment *Mentor) error {
+	_, err := d.db.NewDelete().Model(ment).WhereOr("MMST_ID = ?", ment.MmstID).WhereOr("TAG = ?", ment.Tag).Exec(ctx)
 	return err
 }
 
@@ -63,9 +69,19 @@ func (d *_db) UpdateMentor(ctx context.Context, ment *Mentor) error {
 	return err
 }
 
+func (d *_db) CheckMentor(ctx context.Context, ment *Mentor) (bool, error) {
+	return d.db.NewSelect().Model(ment).WhereOr("MMST_ID = ?", ment.MmstID).WhereOr("TAG = ?", ment.Tag).Exists(ctx)
+}
+
+func (d *_db) GetStudents(ctx context.Context) ([]Student, error) {
+	var res []Student
+	err := d.db.NewSelect().Model(&res).Relation("Labs").Relation("DoneLabs").Scan(ctx)
+	return res, err
+}
+
 func (d *_db) GetStudentById(ctx context.Context, key int64) (*Student, error) {
 	stud := new(Student)
-	err := d.db.NewSelect().Model(stud).Where("ID = ?", key).Scan(ctx)
+	err := d.db.NewSelect().Model(stud).Where("ID = ?", key).Relation("Labs").Relation("DoneLabs").Scan(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +90,7 @@ func (d *_db) GetStudentById(ctx context.Context, key int64) (*Student, error) {
 
 func (d *_db) GetStudentByTag(ctx context.Context, key string) (*Student, error) {
 	stud := new(Student)
-	err := d.db.NewSelect().Model(stud).Where("TAG = ?", key).Scan(ctx)
+	err := d.db.NewSelect().Model(stud).Where("TAG = ?", key).Relation("Labs").Relation("DoneLabs").Scan(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +98,7 @@ func (d *_db) GetStudentByTag(ctx context.Context, key string) (*Student, error)
 }
 
 func (d *_db) AddStudent(ctx context.Context, stud *Student) error {
-	_, err := d.db.NewInsert().Model(stud).Exec(ctx)
+	_, err := d.db.NewInsert().Model(stud).On("CONFLICT DO NOTHING").Exec(ctx)
 	if err != nil {
 		return err
 	}
@@ -101,14 +117,13 @@ func (d *_db) AddLab(ctx context.Context, lab *Lab) (Mentor, error) {
 	if err != nil {
 		return selectedMentor, err
 	}
-	selectedMentor.Load++
+	selectedMentor.Load += 2
 	d.db.NewUpdate().Model(&selectedMentor).WherePK().Exec(ctx)
 	lab.MentorID = selectedMentor.ID
 	_, err = d.db.NewInsert().Model(lab).On("CONFLICT DO NOTHING").Exec(ctx)
 	if err != nil {
 		return selectedMentor, err
 	}
-	err = d.db.NewSelect().Model(lab).Where("URL = ?", lab.Url).Scan(ctx)
 	return selectedMentor, err
 }
 
@@ -117,12 +132,29 @@ func (d *_db) UpdateLab(ctx context.Context, lab *Lab) error {
 	return err
 }
 
+func (d *_db) GetLabPK(ctx context.Context, lab interface{}) error {
+	return d.db.NewSelect().Model(lab).WherePK().Scan(ctx)
+}
+
+func (d *_db) GetLabs(ctx context.Context, lab *Lab) ([]Lab, error) {
+	var labs []Lab
+	err := d.db.NewSelect().Model(&labs).Where("URL = ?", lab.Url).Where("STUDENT_ID = ?", lab.StudentID).Scan(ctx)
+	return labs, err
+}
+
+func (d *_db) GetStudentLabs(ctx context.Context, stud *Student) ([]Lab, error) {
+	var labs []Lab
+	err := d.db.NewSelect().Model(&labs).Where("STUDENT_ID = ?", stud.ID).Scan(ctx)
+	return labs, err
+}
+
 func (d *_db) FinishLab(ctx context.Context, lab *Lab) error {
 	doneLab := DoneLab{
 		ID:        lab.ID,
 		Url:       lab.Url,
 		StudentID: lab.StudentID,
 		MentorID:  lab.MentorID,
+		Number:    lab.Number,
 	}
 	_, err := d.db.NewInsert().Model(&doneLab).On("CONFLICT DO NOTHING").Exec(ctx)
 	if err != nil {
@@ -138,6 +170,7 @@ func (d *_db) UnfinishLab(ctx context.Context, lab *DoneLab) error {
 		Url:       lab.Url,
 		StudentID: lab.StudentID,
 		MentorID:  lab.MentorID,
+		Number:    lab.Number,
 	}
 	_, err := d.db.NewInsert().Model(&undoneLab).On("CONFLICT DO NOTHING").Exec(ctx)
 	if err != nil {
@@ -145,4 +178,9 @@ func (d *_db) UnfinishLab(ctx context.Context, lab *DoneLab) error {
 	}
 	_, err = d.db.NewDelete().Model(lab).WherePK().Exec(ctx)
 	return err
+}
+
+func (d *_db) CheckAdmin(ctx context.Context, adm *Admin) (bool, error) {
+	cnt, err := d.db.NewSelect().Model((*Admin)(nil)).WhereOr("MMST_ID = ?", adm.MmstID).WhereOr("TAG = ?", adm.Tag).Count(ctx)
+	return cnt > 0, err
 }

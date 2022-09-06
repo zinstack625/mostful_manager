@@ -5,6 +5,7 @@ import "github.com/uptrace/bun"
 type Mentor struct {
 	bun.BaseModel `bun:"table:mentors"`
 	ID            int64  `bun:",pk,autoincrement"`
+	MmstID        string `bun:",unique"`
 	Tag           string `bun:",pk"`
 	Load          int64
 	Labs          []*Lab     `bun:"rel:has-many,join:id=mentor_id"`
@@ -13,8 +14,10 @@ type Mentor struct {
 
 type Student struct {
 	bun.BaseModel `bun:"table:students"`
-	ID            int64      `bun:",pk,autoincrement"`
-	Tag           string     `bun:",pk"`
+	ID            int64  `bun:",pk,autoincrement"`
+	MmstID        string `bun:",unique"`
+	Tag           string `bun:",pk"`
+	RealName      *string
 	Labs          []*Lab     `bun:"rel:has-many,join:id=student_id"`
 	DoneLabs      []*DoneLab `bun:"rel:has-many,join:id=student_id"`
 }
@@ -25,6 +28,7 @@ type Lab struct {
 	Url           string
 	StudentID     int64
 	MentorID      int64
+	Number        int64
 }
 
 type DoneLab struct {
@@ -33,10 +37,12 @@ type DoneLab struct {
 	Url           string
 	StudentID     int64
 	MentorID      int64
+	Number        int64
 }
 
 type Admin struct {
 	bun.BaseModel `bun:"table:admins"`
 	ID            int64  `bun:",pk,autoincrement"`
+	MmstID        string `bun:",unique"`
 	Tag           string `bun:",pk"`
 }
