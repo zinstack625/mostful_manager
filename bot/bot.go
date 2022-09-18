@@ -39,7 +39,7 @@ func (b *Bot) Init(url string, token string) {
 	}
 	b.client = model.NewAPIv4Client(fmt.Sprintf("https://%s", url))
 	b.client.SetToken(token)
-	b.user, _, err = b.client.GetUserByUsername("testbot", "")
+	b.user, _, err = b.client.GetUserByUsername("cbeer_lab", "")
 	if err != nil {
 		panic(err)
 	}
