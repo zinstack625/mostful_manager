@@ -265,5 +265,5 @@ func (b *Bot) SetupWebHooks() {
 	http.HandleFunc("/removementor", b.removementor)
 	http.HandleFunc("/actions", b.dispatchActions)
 	http.HandleFunc("/labs", b.labs)
-	go http.ListenAndServe("0.0.0.0:80", nil)
+	go http.ListenAndServe("0.0.0.0:5000", nil)
 }
