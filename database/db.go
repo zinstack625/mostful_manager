@@ -113,12 +113,12 @@ func (d *_db) UpdateStudent(ctx context.Context, stud *Student) error {
 
 func (d *_db) AddLab(ctx context.Context, lab *Lab) (Mentor, error) {
 	var selectedMentor Mentor
-	err := d.db.NewSelect().Model(&selectedMentor).Order("load asc").Limit(1).Scan(ctx)
+	err := d.db.NewSelect().Model(&selectedMentor).Order("load asc").Column("LOAD").Limit(1).Scan(ctx)
 	if err != nil {
 		return selectedMentor, err
 	}
 	selectedMentor.Load += 2
-	d.db.NewUpdate().Model(&selectedMentor).WherePK().Exec(ctx)
+	d.db.NewUpdate().Model(&selectedMentor).WherePK().Column("LOAD").Exec(ctx)
 	lab.MentorID = selectedMentor.ID
 	_, err = d.db.NewInsert().Model(lab).On("CONFLICT DO NOTHING").Exec(ctx)
 	if err != nil {
@@ -149,6 +149,13 @@ func (d *_db) GetStudentLabs(ctx context.Context, stud *Student) ([]Lab, error) 
 }
 
 func (d *_db) FinishLab(ctx context.Context, lab *Lab) error {
+	var selectedMentor Mentor
+	err := d.db.NewSelect().Model(&selectedMentor).Where("ID = ?", lab.MentorID).Column("LOAD").Scan(ctx)
+	if err != nil {
+		return err
+	}
+	selectedMentor.Load -= 1
+	d.db.NewUpdate().Model(&selectedMentor).WherePK().Column("LOAD").Exec(ctx)
 	doneLab := DoneLab{
 		ID:        lab.ID,
 		Url:       lab.Url,
@@ -156,7 +163,7 @@ func (d *_db) FinishLab(ctx context.Context, lab *Lab) error {
 		MentorID:  lab.MentorID,
 		Number:    lab.Number,
 	}
-	_, err := d.db.NewInsert().Model(&doneLab).On("CONFLICT DO NOTHING").Exec(ctx)
+	_, err = d.db.NewInsert().Model(&doneLab).On("CONFLICT DO NOTHING").Exec(ctx)
 	if err != nil {
 		return err
 	}
@@ -165,6 +172,13 @@ func (d *_db) FinishLab(ctx context.Context, lab *Lab) error {
 }
 
 func (d *_db) UnfinishLab(ctx context.Context, lab *DoneLab) error {
+	var selectedMentor Mentor
+	err := d.db.NewSelect().Model(&selectedMentor).Where("ID = ?", lab.MentorID).Column("LOAD").Scan(ctx)
+	if err != nil {
+		return err
+	}
+	selectedMentor.Load += 1
+	d.db.NewUpdate().Model(&selectedMentor).WherePK().Column("LOAD").Exec(ctx)
 	undoneLab := Lab{
 		ID:        lab.ID,
 		Url:       lab.Url,
@@ -172,7 +186,7 @@ func (d *_db) UnfinishLab(ctx context.Context, lab *DoneLab) error {
 		MentorID:  lab.MentorID,
 		Number:    lab.Number,
 	}
-	_, err := d.db.NewInsert().Model(&undoneLab).On("CONFLICT DO NOTHING").Exec(ctx)
+	_, err = d.db.NewInsert().Model(&undoneLab).On("CONFLICT DO NOTHING").Exec(ctx)
 	if err != nil {
 		return err
 	}
