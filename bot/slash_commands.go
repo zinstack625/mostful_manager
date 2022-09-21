@@ -42,7 +42,7 @@ func (b *Bot) checkme(resp http.ResponseWriter, req *http.Request) {
 	}
 	database.DB.AddStudent(ctx, student)
 
-	labNumScanner, err := regexp.Compile("^https://github.com/.*/[0-9]{2}-lab-([0-9]{2}).*/[0-9]{1,}$")
+	labNumScanner, err := regexp.Compile("^https://github.com/.*/[0-9]{2}-lab-([0-9]{2}).*/pull/[0-9]{1,}$")
 	if err != nil {
 		log.Printf("Unable to compile regexp: %s", err)
 		return
