@@ -29,7 +29,7 @@ func (b *Bot) checkme(resp http.ResponseWriter, req *http.Request) {
 	}
 	labUrl := req.Form.Get("text")
 	if ok, err := regexp.Match("^https://github.com/.*/[0-9]{2}-lab-[0-9]{2}.*/pull/[0-9]{1,}$", []byte(labUrl)); err == nil && !ok {
-		utils.RespondEphemeral(resp, "Does not seem like a lab we check! Make sure the URL is in form of \"https://github.com/bmstu-cbeer-20**/**-lab-**-YourName\"")
+		utils.RespondEphemeral(resp, "Does not seem like a lab we check! Make sure the URL is in form of \"https://github.com/bmstu-cbeer-20**/**-lab-**-YourName/1\"")
 		return
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
