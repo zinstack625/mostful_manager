@@ -28,7 +28,7 @@ func (b *Bot) checkme(resp http.ResponseWriter, req *http.Request) {
 		resp.Write([]byte("Wrong token secret"))
 	}
 	labUrl := req.Form.Get("text")
-	if ok, err := regexp.Match("https://github.com/.*/[0-9]{2}-lab-[0-9]{2}.*", []byte(labUrl)); err == nil && !ok {
+	if ok, err := regexp.Match("^https://github.com/.*/[0-9]{2}-lab-[0-9]{2}.*/pull/[0-9]{1,}$", []byte(labUrl)); err == nil && !ok {
 		utils.RespondEphemeral(resp, "Does not seem like a lab we check! Make sure the URL is in form of \"https://github.com/bmstu-cbeer-20**/**-lab-**-YourName\"")
 		return
 	}
@@ -42,7 +42,7 @@ func (b *Bot) checkme(resp http.ResponseWriter, req *http.Request) {
 	}
 	database.DB.AddStudent(ctx, student)
 
-	labNumScanner, err := regexp.Compile("https://github.com/.*/[0-9]{2}-lab-([0-9]{2}).*")
+	labNumScanner, err := regexp.Compile("^https://github.com/.*/[0-9]{2}-lab-([0-9]{2}).*/[0-9]{1,}$")
 	if err != nil {
 		log.Printf("Unable to compile regexp: %s", err)
 		return
