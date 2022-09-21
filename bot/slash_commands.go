@@ -259,11 +259,53 @@ func createMDTable(table [][]string) string {
 	return markdown
 }
 
+func (b *Bot) setStudName(resp http.ResponseWriter, req *http.Request) {
+	resp.Header().Add("Content-Type", "application/json")
+	err := req.ParseForm()
+	if err != nil {
+		resp.WriteHeader(500)
+		resp.Write([]byte("Unable to parse form"))
+		log.Println("Something went wrong with parsing the url: ", err.Error())
+		return
+	}
+	if req.Form.Get("token") != config.IntegrationTokens.SetName {
+		resp.WriteHeader(403)
+		resp.Write([]byte("Wrong token secret"))
+	}
+	args := strings.Split(req.Form.Get("text"), " ")
+	if len(args) < 2 {
+		utils.RespondEphemeral(resp, "Must supply Mattermost ID and Tag separated by space!")
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	if ok, err := database.DB.CheckMentor(ctx, &database.Mentor{
+		MmstID: req.Form.Get("user_id"),
+		Tag:    req.Form.Get("user_name"),
+	}); err != nil || !ok {
+		utils.RespondEphemeral(resp, "You have no permission!")
+		return
+	}
+	stud, err := database.DB.GetStudentByTag(ctx, args[0])
+	if err != nil {
+		log.Printf("Something went wrong at setting stud name, db.GetStudentByTag: %s", err)
+		return
+	}
+	stud.RealName = &args[1]
+	err = database.DB.UpdateStudent(ctx, stud)
+	if err != nil {
+		log.Printf("Something went wrong at setting stud name, db.UpdateStudent: %s", err)
+		return
+	}
+	utils.RespondEphemeral(resp, "Done!")
+}
+
 func (b *Bot) SetupWebHooks() {
 	http.HandleFunc("/checkme", b.checkme)
 	http.HandleFunc("/addmentor", b.addmentor)
 	http.HandleFunc("/removementor", b.removementor)
 	http.HandleFunc("/actions", b.dispatchActions)
 	http.HandleFunc("/labs", b.labs)
+	http.HandleFunc("/setstudname", b.setStudName)
 	go http.ListenAndServe("0.0.0.0:5000", nil)
 }
