@@ -291,7 +291,11 @@ func (b *Bot) setStudName(resp http.ResponseWriter, req *http.Request) {
 		log.Printf("Something went wrong at setting stud name, db.GetStudentByTag: %s", err)
 		return
 	}
-	stud.RealName = &args[1]
+	studName := args[1]
+	for i := 2; i < len(args); i++ {
+		studName += " " + args[i]
+	}
+	stud.RealName = &studName
 	err = database.DB.UpdateStudent(ctx, stud)
 	if err != nil {
 		log.Printf("Something went wrong at setting stud name, db.UpdateStudent: %s", err)
