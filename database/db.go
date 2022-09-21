@@ -132,8 +132,12 @@ func (d *_db) UpdateLab(ctx context.Context, lab *Lab) error {
 	return err
 }
 
-func (d *_db) GetLabPK(ctx context.Context, lab interface{}) error {
-	return d.db.NewSelect().Model(lab).WherePK().Scan(ctx)
+func (d *_db) GetLabPK(ctx context.Context, lab *Lab) error {
+	return d.db.NewSelect().Model(lab).Where("ID = ?", lab.ID).Scan(ctx)
+}
+
+func (d *_db) GetDoneLabPK(ctx context.Context, lab *DoneLab) error {
+	return d.db.NewSelect().Model(lab).Where("ID = ?", lab.ID).Scan(ctx)
 }
 
 func (d *_db) GetLabs(ctx context.Context, lab *Lab) ([]Lab, error) {

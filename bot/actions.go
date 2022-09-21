@@ -60,8 +60,14 @@ func (b *Bot) approveLab(resp http.ResponseWriter, action *actionObject) {
 	err := database.DB.GetLabPK(ctx, &lab)
 	if err != nil {
 		log.Printf("Something went wrong: %s", err)
+		return
 	}
-	database.DB.FinishLab(ctx, &lab)
+	err = database.DB.FinishLab(ctx, &lab)
+	if err != nil {
+		log.Printf("Something went wrong at finishing: %s", err)
+		return
+	}
+
 	postAction := model.PostAction{
 		Id:   "disapprove",
 		Type: "button",
@@ -102,8 +108,13 @@ func (b *Bot) disapproveLab(resp http.ResponseWriter, action *actionObject) {
 	err := database.DB.GetLabPK(ctx, &lab)
 	if err != nil {
 		log.Printf("Something went wrong: %s", err)
+		return
 	}
-	database.DB.UnfinishLab(ctx, &lab)
+	err = database.DB.UnfinishLab(ctx, &lab)
+	if err != nil {
+		log.Printf("Something went wrong at Unfinishing: %s", err)
+		return
+	}
 	postAction := model.PostAction{
 		Id:   "approve",
 		Type: "button",
