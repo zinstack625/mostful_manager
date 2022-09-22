@@ -113,7 +113,7 @@ func (d *_db) UpdateStudent(ctx context.Context, stud *Student) error {
 
 func (d *_db) AddLab(ctx context.Context, lab *Lab) (Mentor, error) {
 	var selectedMentor Mentor
-	err := d.db.NewSelect().Model(&selectedMentor).Order("load asc").Column("LOAD").Limit(1).Scan(ctx)
+	err := d.db.NewSelect().Model(&selectedMentor).Order("load asc").Limit(1).Scan(ctx)
 	if err != nil {
 		return selectedMentor, err
 	}
