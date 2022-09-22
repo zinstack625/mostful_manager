@@ -176,7 +176,7 @@ func (b *Bot) myLabs(resp http.ResponseWriter, req *http.Request) {
 	} else {
 		table[0][0] = *stud.RealName
 	}
-	for _, done_lab := range stud.Labs {
+	for _, done_lab := range stud.DoneLabs {
 		table[0][done_lab.Number+1] = "✅"
 	}
 	utils.RespondEphemeral(resp, createMDTable(table))

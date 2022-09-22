@@ -105,7 +105,7 @@ func (b *Bot) disapproveLab(resp http.ResponseWriter, action *actionObject) {
 	lab := database.DoneLab{
 		ID: int64(action.Lab),
 	}
-	err := database.DB.GetLabPK(ctx, &lab)
+	err := database.DB.GetDoneLabPK(ctx, &lab)
 	if err != nil {
 		log.Printf("Something went wrong: %s", err)
 		return
