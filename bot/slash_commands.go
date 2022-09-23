@@ -226,7 +226,7 @@ func (b *Bot) labs(resp http.ResponseWriter, req *http.Request) {
 		} else {
 			table[i][0] = *v.RealName
 		}
-		log.Printf("Student: %s\tDone labs:", table[0][0])
+		log.Printf("Student: %s\tDone labs:", table[i][0])
 		for _, done_lab := range studArray[i].DoneLabs {
 			log.Printf("%d", done_lab.Number)
 			table[i][done_lab.Number+1] = "✅"
@@ -234,7 +234,7 @@ func (b *Bot) labs(resp http.ResponseWriter, req *http.Request) {
 		log.Println("Sent labs:")
 		for _, sent_lab := range studArray[i].Labs {
 			log.Printf("%d", sent_lab.Number)
-			table[0][sent_lab.Number+1] = "🔄"
+			table[i][sent_lab.Number+1] = "🔄"
 		}
 	}
 	utils.RespondEphemeral(resp, createMDTable(table))
