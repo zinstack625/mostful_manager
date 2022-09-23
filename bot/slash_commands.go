@@ -179,6 +179,9 @@ func (b *Bot) myLabs(resp http.ResponseWriter, req *http.Request) {
 	for _, done_lab := range stud.DoneLabs {
 		table[0][done_lab.Number+1] = "✅"
 	}
+	for _, sent_lab := range stud.Labs {
+		table[0][sent_lab.Number+1] = "🔄"
+	}
 	utils.RespondEphemeral(resp, createMDTable(table))
 }
 
@@ -220,8 +223,11 @@ func (b *Bot) labs(resp http.ResponseWriter, req *http.Request) {
 			table[i][0] = *v.RealName
 		}
 		log.Printf("%p", v.DoneLabs)
-		for _, done_lab := range studArray[i].Labs {
+		for _, done_lab := range studArray[i].DoneLabs {
 			table[i][done_lab.Number+1] = "✅"
+		}
+		for _, sent_lab := range studArray[i].Labs {
+			table[0][sent_lab.Number+1] = "🔄"
 		}
 	}
 	utils.RespondEphemeral(resp, createMDTable(table))
@@ -232,7 +238,7 @@ func createMDTable(table [][]string) string {
 	// HEADER
 	markdown += " | "
 	for i := range table[0] {
-		markdown += fmt.Sprint(i + 1)
+		markdown += fmt.Sprint(i)
 		if i == len(table[0])-2 {
 			break
 		}
