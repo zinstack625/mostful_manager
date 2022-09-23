@@ -118,7 +118,7 @@ func (d *_db) AddLab(ctx context.Context, lab *Lab) (Mentor, error) {
 		return selectedMentor, err
 	}
 	selectedMentor.Load += 2
-	d.db.NewUpdate().Model(&selectedMentor).WherePK().Column("LOAD").Exec(ctx)
+	d.db.NewUpdate().Model(&selectedMentor).Where("ID = ?", selectedMentor.ID).Column("LOAD").Exec(ctx)
 	lab.MentorID = selectedMentor.ID
 	_, err = d.db.NewInsert().Model(lab).On("CONFLICT DO NOTHING").Exec(ctx)
 	if err != nil {
@@ -159,7 +159,7 @@ func (d *_db) FinishLab(ctx context.Context, lab *Lab) error {
 		return err
 	}
 	selectedMentor.Load -= 1
-	d.db.NewUpdate().Model(&selectedMentor).WherePK().Column("LOAD").Exec(ctx)
+	d.db.NewUpdate().Model(&selectedMentor).Where("ID = ?", lab.MentorID).Column("LOAD").Exec(ctx)
 	doneLab := DoneLab{
 		ID:        lab.ID,
 		Url:       lab.Url,
@@ -182,7 +182,7 @@ func (d *_db) UnfinishLab(ctx context.Context, lab *DoneLab) error {
 		return err
 	}
 	selectedMentor.Load += 1
-	d.db.NewUpdate().Model(&selectedMentor).WherePK().Column("LOAD").Exec(ctx)
+	d.db.NewUpdate().Model(&selectedMentor).Where("ID = ?", lab.MentorID).Column("LOAD").Exec(ctx)
 	undoneLab := Lab{
 		ID:        lab.ID,
 		Url:       lab.Url,
