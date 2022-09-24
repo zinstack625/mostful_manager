@@ -204,10 +204,19 @@ func (b *Bot) labs(resp http.ResponseWriter, req *http.Request) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	if ok, err := database.DB.CheckMentor(ctx, &database.Mentor{
+	isMentor, err := database.DB.CheckMentor(ctx, &database.Mentor{
 		MmstID: req.Form.Get("user_id"),
 		Tag:    req.Form.Get("user_name"),
-	}); err != nil || !ok {
+	})
+	if err != nil {
+		b.myLabs(resp, req)
+		return
+	}
+	isAdmin, err := database.DB.CheckAdmin(ctx, &database.Admin{
+		MmstID: req.Form.Get("user_id"),
+		Tag:    req.Form.Get("user_name"),
+	})
+	if err != nil || !(isMentor || isAdmin) {
 		b.myLabs(resp, req)
 		return
 	}
