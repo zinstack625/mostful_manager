@@ -249,6 +249,52 @@ func (b *Bot) labs(resp http.ResponseWriter, req *http.Request) {
 	utils.RespondEphemeral(resp, createMDTable(table))
 }
 
+func (b *Bot) mentorLabs(resp http.ResponseWriter, req *http.Request) {
+	resp.Header().Add("Content-Type", "application/json")
+	err := req.ParseForm()
+	if err != nil {
+		resp.WriteHeader(500)
+		resp.Write([]byte("Unable to parse form"))
+		log.Println("Something went wrong with parsing the url: ", err.Error())
+		return
+	}
+	if req.Form.Get("token") != config.IntegrationTokens.MentorLabs {
+		resp.WriteHeader(403)
+		resp.Write([]byte("Wrong token secret"))
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	isAdmin, err := database.DB.CheckAdmin(ctx, &database.Admin{
+		MmstID: req.Form.Get("user_id"),
+		Tag:    req.Form.Get("user_name"),
+	})
+	if err != nil || !isAdmin {
+		return
+	}
+	mentor, err := database.DB.GetMentorByTag(ctx, req.Form.Get("text"))
+	if err != nil {
+		resp.WriteHeader(500)
+		resp.Write([]byte("Unable to find mentor"))
+		log.Println("Something went wrong with parsing the url: ", err.Error())
+		return
+	}
+	table := make([][]string, len(mentor.Labs)+len(mentor.DoneLabs)+2)
+	table[0] = make([]string, 1)
+	table[0][0] = "Undone labs"
+	table[len(mentor.Labs)+1] = make([]string, 1)
+	table[len(mentor.Labs)+1][0] = "*Done labs*"
+
+	for i, v := range mentor.Labs {
+		table[i+1] = make([]string, 1)
+		table[i+1][0] = v.Url
+	}
+	for i, v := range mentor.DoneLabs {
+		table[i+2] = make([]string, 1)
+		table[i+1][0] = v.Url
+	}
+	utils.RespondEphemeral(resp, createMDTable(table))
+}
+
 func createMDTable(table [][]string) string {
 	var markdown string
 	// HEADER
@@ -333,5 +379,6 @@ func (b *Bot) SetupWebHooks() {
 	http.HandleFunc("/actions", b.dispatchActions)
 	http.HandleFunc("/labs", b.labs)
 	http.HandleFunc("/setstudname", b.setStudName)
+	http.HandleFunc("/mentorlabs", b.mentorLabs)
 	go http.ListenAndServe("0.0.0.0:5000", nil)
 }

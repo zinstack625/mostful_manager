@@ -12,6 +12,7 @@ type integrationTokens struct {
 	CheckMe      string `json:"check_me"`
 	Labs         string `json:"labs"`
 	SetName      string `json:"set_name"`
+	MentorLabs   string `json:"mentor_labs"`
 }
 
 func (i *integrationTokens) Init(configPath string) error {
