@@ -194,6 +194,7 @@ func (b *Bot) myLabs(resp http.ResponseWriter, req *http.Request) {
 	} else {
 		report.students[0].name = *stud.RealName
 	}
+	report.students[0].tag = fmt.Sprintf("@%s", stud.Tag)
 	for _, done_lab := range stud.DoneLabs {
 		report.students[0].labs[done_lab.Number] = Done
 	}
@@ -288,7 +289,7 @@ func (b *Bot) labs(resp http.ResponseWriter, req *http.Request) {
 		}
 		if v.RealName == nil {
 			user, _, err := b.client.GetUsersByIds([]string{v.MmstID})
-			if err != nil {
+			if err != nil && len(user) > 0 {
 				report.students[i].name = user[0].GetFullName()
 			} else {
 				report.students[i].name = v.Tag
@@ -296,6 +297,7 @@ func (b *Bot) labs(resp http.ResponseWriter, req *http.Request) {
 		} else {
 			report.students[i].name = *v.RealName
 		}
+		report.students[i].tag = fmt.Sprintf("@%s", v.Tag)
 		for _, done_lab := range studArray[i].DoneLabs {
 			report.students[i].labs[done_lab.Number] = Done
 		}
