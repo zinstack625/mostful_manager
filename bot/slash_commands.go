@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -169,24 +170,68 @@ func (b *Bot) myLabs(resp http.ResponseWriter, req *http.Request) {
 		log.Println("Something went wrong with parsing the url: ", err.Error())
 		return
 	}
-	table := make([][]string, 1)
-	table[0] = make([]string, 13)
+	var report StudentsMarks
+	report.students = make([]StudentReport, 1)
+	studArray, err := database.DB.GetStudents(ctx)
+	labNum := 0
+	for _, stud := range studArray {
+		studLabsCnt := len(stud.Labs) + len(stud.DoneLabs)
+		if labNum < studLabsCnt {
+			labNum = studLabsCnt
+		}
+	}
+	report.students[0].labs = make([]LabState, labNum)
+	for j := range report.students[0].labs {
+		report.students[0].labs[j] = NotReady
+	}
 	if stud.RealName == nil {
-		table[0][0] = stud.Tag
+		user, _, err := b.client.GetUsersByIds([]string{stud.MmstID})
+		if err != nil && len(user) > 0 {
+			report.students[0].name = user[0].GetFullName()
+		} else {
+			report.students[0].name = stud.Tag
+		}
 	} else {
-		table[0][0] = *stud.RealName
+		report.students[0].name = *stud.RealName
 	}
-	log.Printf("Student: %s\tDone labs:", table[0][0])
 	for _, done_lab := range stud.DoneLabs {
-		log.Printf("%d", done_lab.Number)
-		table[0][done_lab.Number+1] = "✅"
+		report.students[0].labs[done_lab.Number] = Done
 	}
-	log.Println("Sent labs:")
 	for _, sent_lab := range stud.Labs {
-		log.Printf("%d", sent_lab.Number)
-		table[0][sent_lab.Number+1] = "🔄"
+		report.students[0].labs[sent_lab.Number] = InProgress
 	}
-	utils.RespondEphemeral(resp, createMDTable(table))
+	utils.RespondEphemeral(resp, createMDTable(report))
+}
+
+type StudentsMarks struct {
+	students        []StudentReport
+	total_lab_count int
+}
+
+type LabState int
+
+const (
+	NotReady = iota
+	InProgress
+	Done
+)
+
+type StudentReport struct {
+	name string
+	tag  string
+	labs []LabState
+}
+
+func (r *StudentsMarks) Len() int {
+	return len(r.students)
+}
+
+func (r *StudentsMarks) Less(i, j int) bool {
+	return r.students[i].name < r.students[j].name
+}
+
+func (r *StudentsMarks) Swap(i, j int) {
+	r.students[i], r.students[j] = r.students[j], r.students[i]
 }
 
 func (b *Bot) labs(resp http.ResponseWriter, req *http.Request) {
@@ -227,26 +272,39 @@ func (b *Bot) labs(resp http.ResponseWriter, req *http.Request) {
 		log.Println("Something went wrong with parsing the url: ", err.Error())
 		return
 	}
-	table := make([][]string, len(studArray))
-	for i, v := range studArray {
-		table[i] = make([]string, 13)
-		if v.RealName == nil {
-			table[i][0] = v.Tag
-		} else {
-			table[i][0] = *v.RealName
-		}
-		log.Printf("Student: %s\tDone labs:", table[i][0])
-		for _, done_lab := range studArray[i].DoneLabs {
-			log.Printf("%d", done_lab.Number)
-			table[i][done_lab.Number+1] = "✅"
-		}
-		log.Println("Sent labs:")
-		for _, sent_lab := range studArray[i].Labs {
-			log.Printf("%d", sent_lab.Number)
-			table[i][sent_lab.Number+1] = "🔄"
+	var report StudentsMarks
+	report.students = make([]StudentReport, len(studArray))
+	labNum := 0
+	for _, stud := range studArray {
+		studLabsCnt := len(stud.Labs) + len(stud.DoneLabs)
+		if labNum < studLabsCnt {
+			labNum = studLabsCnt
 		}
 	}
-	utils.RespondEphemeral(resp, createMDTable(table))
+	for i, v := range studArray {
+		report.students[i].labs = make([]LabState, labNum)
+		for j := range report.students[i].labs {
+			report.students[i].labs[j] = NotReady
+		}
+		if v.RealName == nil {
+			user, _, err := b.client.GetUsersByIds([]string{v.MmstID})
+			if err != nil {
+				report.students[i].name = user[0].GetFullName()
+			} else {
+				report.students[i].name = v.Tag
+			}
+		} else {
+			report.students[i].name = *v.RealName
+		}
+		for _, done_lab := range studArray[i].DoneLabs {
+			report.students[i].labs[done_lab.Number] = Done
+		}
+		for _, sent_lab := range studArray[i].Labs {
+			report.students[i].labs[sent_lab.Number] = InProgress
+		}
+	}
+	sort.Sort(&report)
+	utils.RespondEphemeral(resp, createMDTable(report))
 }
 
 func (b *Bot) mentorLabs(resp http.ResponseWriter, req *http.Request) {
@@ -278,47 +336,43 @@ func (b *Bot) mentorLabs(resp http.ResponseWriter, req *http.Request) {
 		log.Println("Something went wrong with parsing the url: ", err.Error())
 		return
 	}
-	table := make([][]string, len(mentor.Labs)+len(mentor.DoneLabs)+2)
-	table[0] = make([]string, 1)
-	table[0][0] = "Undone labs"
-	table[len(mentor.Labs)+1] = make([]string, 1)
-	table[len(mentor.Labs)+1][0] = "*Done labs*"
-
-	for i, v := range mentor.Labs {
-		table[i+1] = make([]string, 1)
-		table[i+1][0] = v.Url
+	stringBuffer := "Undone labs\n"
+	for _, v := range mentor.Labs {
+		stringBuffer += v.Url + "\n"
 	}
-	for i, v := range mentor.DoneLabs {
-		table[i+2] = make([]string, 1)
-		table[i+1][0] = v.Url
+	stringBuffer += "Done labs\n"
+	for _, v := range mentor.DoneLabs {
+		stringBuffer += v.Url + "\n"
 	}
-	utils.RespondEphemeral(resp, createMDTable(table))
+	utils.RespondEphemeral(resp, stringBuffer)
 }
 
-func createMDTable(table [][]string) string {
+func createMDTable(table StudentsMarks) string {
 	var markdown string
 	// HEADER
-	markdown += " | "
-	for i := range table[0] {
-		markdown += fmt.Sprint(i)
-		if i == len(table[0])-2 {
-			break
-		}
+	markdown += "Name | Tag | "
+	for i := 0; i < table.total_lab_count-1; i++ {
+		markdown += fmt.Sprint(i + 1)
 		markdown += " | "
 	}
-	markdown += "\n"
-	for i := range table[0] {
+	markdown += fmt.Sprintf("%i\n", table.total_lab_count)
+	for i := 0; i < table.total_lab_count+1; i++ {
 		markdown += "---"
-		if i != len(table[0])-1 {
-			markdown += " | "
-		}
+		markdown += " | "
 	}
-	markdown += "\n"
+	markdown += "---\n"
 	// BODY
-	for _, row := range table {
-		for i, column := range row {
-			markdown += column
-			if i != len(row)-1 {
+	for _, row := range table.students {
+		markdown += fmt.Sprintf("%s | %s | ", row.name, row.tag)
+		for i, column := range row.labs {
+			switch column {
+			case NotReady:
+			case InProgress:
+				markdown += "🔄"
+			case Done:
+				markdown += "✅"
+			}
+			if i != len(row.labs)-1 {
 				markdown += " | "
 			}
 		}
