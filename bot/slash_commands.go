@@ -307,6 +307,14 @@ func (b *Bot) labs(resp http.ResponseWriter, req *http.Request) {
 	}
 	sort.Sort(&report)
 	utils.RespondEphemeral(resp, createMDTable(report))
+	if req.Form.Get("text") == "export" {
+		channel, _, err := b.client.CreateDirectChannel(b.user.Id, req.Form.Get("user_id"))
+		if err != nil {
+			utils.RespondEphemeral(resp, "Unable to export!")
+			return
+		}
+		b.client.UploadFile(makeCSV(report), channel, "report.csv")
+	}
 }
 
 func (b *Bot) mentorLabs(resp http.ResponseWriter, req *http.Request) {
@@ -381,6 +389,36 @@ func createMDTable(table StudentsMarks) string {
 		markdown += "\n"
 	}
 	return markdown
+}
+
+func makeCSV(table StudentsMarks) []byte {
+	var csv string
+	// HEADER
+	csv += "Name,Tag,"
+	for i := 0; i < table.total_lab_count-2; i++ {
+		csv += fmt.Sprint(i + 1)
+		csv += ","
+	}
+	csv += "\n"
+	// BODY
+	for _, row := range table.students {
+		csv += fmt.Sprintf("%s | %s | ", row.name, row.tag)
+		for i, column := range row.labs {
+			switch column {
+			case NotReady:
+				csv += "0"
+			case InProgress:
+				csv += "1"
+			case Done:
+				csv += "2"
+			}
+			if i != len(row.labs)-1 {
+				csv += ","
+			}
+		}
+		csv += "\n"
+	}
+	return []byte(csv)
 }
 
 func (b *Bot) setStudName(resp http.ResponseWriter, req *http.Request) {
