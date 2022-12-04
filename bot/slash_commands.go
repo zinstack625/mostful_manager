@@ -318,14 +318,11 @@ func (b *Bot) labs(resp http.ResponseWriter, req *http.Request) {
 			utils.RespondEphemeral(resp, "Unable to export!")
 			return
 		}
-		post := model.PostEphemeral{
-			UserID: channel.Id,
-			Post: &model.Post{
-				ChannelId: channel.Id,
-				FileIds:   []string{file.FileInfos[0].Id},
-			},
+		post := model.Post{
+			ChannelId: channel.Id,
+			FileIds:   []string{file.FileInfos[0].Id},
 		}
-		_, _, err = b.client.CreatePostEphemeral(&post)
+		_, _, err = b.client.CreatePost(&post)
 		if err != nil {
 			utils.RespondEphemeral(resp, "Unable to export!")
 			return
@@ -418,7 +415,7 @@ func makeCSV(table StudentsMarks) []byte {
 	csv += "\n"
 	// BODY
 	for _, row := range table.students {
-		csv += fmt.Sprintf("%s | %s | ", row.name, row.tag)
+		csv += fmt.Sprintf("%s,%s,", row.name, row.tag)
 		for i, column := range row.labs {
 			switch column {
 			case NotReady:
