@@ -275,15 +275,15 @@ func (b *Bot) labs(resp http.ResponseWriter, req *http.Request) {
 	}
 	var report StudentsMarks
 	report.students = make([]StudentReport, len(studArray))
-	labNum := 0
+	report.total_lab_count = 0
 	for _, stud := range studArray {
 		studLabsCnt := len(stud.Labs) + len(stud.DoneLabs)
-		if labNum < studLabsCnt {
-			labNum = studLabsCnt
+		if report.total_lab_count < studLabsCnt {
+			report.total_lab_count = studLabsCnt
 		}
 	}
 	for i, v := range studArray {
-		report.students[i].labs = make([]LabState, labNum)
+		report.students[i].labs = make([]LabState, report.total_lab_count)
 		for j := range report.students[i].labs {
 			report.students[i].labs[j] = NotReady
 		}
@@ -353,12 +353,12 @@ func createMDTable(table StudentsMarks) string {
 	var markdown string
 	// HEADER
 	markdown += "Name | Tag | "
-	for i := 0; i < table.total_lab_count-1; i++ {
+	for i := 0; i < table.total_lab_count-2; i++ {
 		markdown += fmt.Sprint(i + 1)
 		markdown += " | "
 	}
-	markdown += fmt.Sprintf("%i\n", table.total_lab_count)
-	for i := 0; i < table.total_lab_count+1; i++ {
+	markdown += fmt.Sprintf("%d\n", table.total_lab_count)
+	for i := 0; i < table.total_lab_count; i++ {
 		markdown += "---"
 		markdown += " | "
 	}
