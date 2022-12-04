@@ -313,7 +313,23 @@ func (b *Bot) labs(resp http.ResponseWriter, req *http.Request) {
 			utils.RespondEphemeral(resp, "Unable to export!")
 			return
 		}
-		b.client.UploadFile(makeCSV(report), channel, "report.csv")
+		file, _, err := b.client.UploadFile(makeCSV(report), channel.Id, "report.csv")
+		if err != nil || len(file.FileInfos) == 0 {
+			utils.RespondEphemeral(resp, "Unable to export!")
+			return
+		}
+		post := model.PostEphemeral{
+			UserID: channel.Id,
+			Post: &model.Post{
+				ChannelId: channel.Id,
+				FileIds:   []string{file.FileInfos[0].Id},
+			},
+		}
+		_, _, err = b.client.CreatePostEphemeral(&post)
+		if err != nil {
+			utils.RespondEphemeral(resp, "Unable to export!")
+			return
+		}
 	}
 }
 
