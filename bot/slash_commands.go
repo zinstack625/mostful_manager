@@ -33,7 +33,7 @@ func (b *Bot) checkme(resp http.ResponseWriter, req *http.Request) {
 		utils.RespondEphemeral(resp, "Does not seem like a lab we check! Make sure the URL is in form of \"https://github.com/bmstu-cbeer-20**/**-lab-**-YourName/1\"")
 		return
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	student := &database.Student{
 		MmstID:   req.Form.Get("user_id"),
@@ -104,7 +104,7 @@ func (b *Bot) addmentor(resp http.ResponseWriter, req *http.Request) {
 		resp.WriteHeader(403)
 		resp.Write([]byte("Wrong token secret"))
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if ok, err := database.DB.CheckAdmin(ctx, &database.Admin{
 		MmstID: req.Form.Get("user_id"),
@@ -138,7 +138,7 @@ func (b *Bot) removementor(resp http.ResponseWriter, req *http.Request) {
 		resp.WriteHeader(403)
 		resp.Write([]byte("Wrong token secret"))
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if ok, err := database.DB.CheckAdmin(ctx, &database.Admin{
 		MmstID: req.Form.Get("user_id"),
@@ -161,7 +161,7 @@ func (b *Bot) removementor(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (b *Bot) myLabs(resp http.ResponseWriter, req *http.Request) {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	stud, err := database.DB.GetStudentByTag(ctx, req.Form.Get("user_id"))
 	if err != nil {
@@ -248,7 +248,7 @@ func (b *Bot) labs(resp http.ResponseWriter, req *http.Request) {
 		resp.WriteHeader(403)
 		resp.Write([]byte("Wrong token secret"))
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	isMentor, err := database.DB.CheckMentor(ctx, &database.Mentor{
 		MmstID: req.Form.Get("user_id"),
@@ -343,7 +343,7 @@ func (b *Bot) mentorLabs(resp http.ResponseWriter, req *http.Request) {
 		resp.WriteHeader(403)
 		resp.Write([]byte("Wrong token secret"))
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	isAdmin, err := database.DB.CheckAdmin(ctx, &database.Admin{
 		MmstID: req.Form.Get("user_id"),
@@ -452,7 +452,7 @@ func (b *Bot) setStudName(resp http.ResponseWriter, req *http.Request) {
 		utils.RespondEphemeral(resp, "Must supply Mattermost ID and Tag separated by space!")
 		return
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if ok, err := database.DB.CheckMentor(ctx, &database.Mentor{
 		MmstID: req.Form.Get("user_id"),
