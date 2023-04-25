@@ -186,7 +186,7 @@ func (b *Bot) myLabs(resp http.ResponseWriter, req *http.Request) {
 			}
 		}
 	}
-	report.students[0].labs = make([]LabState, labNum)
+	report.students[0].labs = make([]LabState, labNum + 1)
 	for j := range report.students[0].labs {
 		report.students[0].labs[j] = NotReady
 	}
@@ -295,7 +295,7 @@ func (b *Bot) labs(resp http.ResponseWriter, req *http.Request) {
 		}
 	}
 	for i, v := range studArray {
-		report.students[i].labs = make([]LabState, report.total_lab_count)
+		report.students[i].labs = make([]LabState, report.total_lab_count + 1)
 		for j := range report.students[i].labs {
 			report.students[i].labs[j] = NotReady
 		}
