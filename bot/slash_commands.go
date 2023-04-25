@@ -175,9 +175,15 @@ func (b *Bot) myLabs(resp http.ResponseWriter, req *http.Request) {
 	studArray, err := database.DB.GetStudents(ctx)
 	labNum := 0
 	for _, stud := range studArray {
-		studLabsCnt := len(stud.Labs) + len(stud.DoneLabs)
-		if labNum < studLabsCnt {
-			labNum = studLabsCnt
+		for _, lab := range stud.Labs {
+			if lab.Number > int64(labNum) {
+				labNum = int(lab.Number)
+			}
+		}
+		for _, lab := range stud.DoneLabs {
+			if lab.Number > int64(labNum) {
+				labNum = int(lab.Number)
+			}
 		}
 	}
 	report.students[0].labs = make([]LabState, labNum)
@@ -277,9 +283,15 @@ func (b *Bot) labs(resp http.ResponseWriter, req *http.Request) {
 	report.students = make([]StudentReport, len(studArray))
 	report.total_lab_count = 0
 	for _, stud := range studArray {
-		studLabsCnt := len(stud.Labs) + len(stud.DoneLabs)
-		if report.total_lab_count < studLabsCnt {
-			report.total_lab_count = studLabsCnt
+		for _, lab := range stud.Labs {
+			if lab.Number > int64(report.total_lab_count) {
+				report.total_lab_count = int(lab.Number)
+			}
+		}
+		for _, lab := range stud.DoneLabs {
+			if lab.Number > int64(report.total_lab_count) {
+				report.total_lab_count = int(lab.Number)
+			}
 		}
 	}
 	for i, v := range studArray {
