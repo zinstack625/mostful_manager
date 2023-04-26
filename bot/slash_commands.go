@@ -174,15 +174,22 @@ func (b *Bot) myLabs(resp http.ResponseWriter, req *http.Request) {
 	report.students = make([]StudentReport, 1)
 	studArray, err := database.DB.GetStudents(ctx)
 	labNum := 0
+	min_lab := 1024
 	for _, stud := range studArray {
 		for _, lab := range stud.Labs {
 			if lab.Number > int64(labNum) {
 				labNum = int(lab.Number)
 			}
+			if lab.Number < int64(min_lab) {
+				min_lab = int(lab.Number)
+			}
 		}
 		for _, lab := range stud.DoneLabs {
 			if lab.Number > int64(labNum) {
 				labNum = int(lab.Number)
+			}
+			if lab.Number < int64(min_lab) {
+				min_lab = int(lab.Number)
 			}
 		}
 	}
@@ -202,12 +209,12 @@ func (b *Bot) myLabs(resp http.ResponseWriter, req *http.Request) {
 	}
 	report.students[0].tag = fmt.Sprintf("@%s", stud.Tag)
 	for _, done_lab := range stud.DoneLabs {
-		report.students[0].labs[done_lab.Number] = Done
+		report.students[0].labs[done_lab.Number - int64(min_lab)] = Done
 	}
 	for _, sent_lab := range stud.Labs {
-		report.students[0].labs[sent_lab.Number] = InProgress
+		report.students[0].labs[sent_lab.Number - int64(min_lab)] = InProgress
 	}
-	utils.RespondEphemeral(resp, createMDTable(report))
+	utils.RespondEphemeral(resp, createMDTable(report, min_lab))
 }
 
 type StudentsMarks struct {
@@ -281,21 +288,29 @@ func (b *Bot) labs(resp http.ResponseWriter, req *http.Request) {
 	}
 	var report StudentsMarks
 	report.students = make([]StudentReport, len(studArray))
+	// used as max_lab
 	report.total_lab_count = 0
+	min_lab := 1024
 	for _, stud := range studArray {
 		for _, lab := range stud.Labs {
 			if lab.Number > int64(report.total_lab_count) {
 				report.total_lab_count = int(lab.Number)
+			}
+			if lab.Number < int64(min_lab) {
+				min_lab = int(lab.Number)
 			}
 		}
 		for _, lab := range stud.DoneLabs {
 			if lab.Number > int64(report.total_lab_count) {
 				report.total_lab_count = int(lab.Number)
 			}
+			if lab.Number < int64(min_lab) {
+				min_lab = int(lab.Number)
+			}
 		}
 	}
 	for i, v := range studArray {
-		report.students[i].labs = make([]LabState, report.total_lab_count + 1)
+		report.students[i].labs = make([]LabState, report.total_lab_count + 1 - min_lab)
 		for j := range report.students[i].labs {
 			report.students[i].labs[j] = NotReady
 		}
@@ -311,21 +326,21 @@ func (b *Bot) labs(resp http.ResponseWriter, req *http.Request) {
 		}
 		report.students[i].tag = fmt.Sprintf("@%s", v.Tag)
 		for _, done_lab := range studArray[i].DoneLabs {
-			report.students[i].labs[done_lab.Number] = Done
+			report.students[i].labs[done_lab.Number - int64(min_lab)] = Done
 		}
 		for _, sent_lab := range studArray[i].Labs {
-			report.students[i].labs[sent_lab.Number] = InProgress
+			report.students[i].labs[sent_lab.Number - int64(min_lab)] = InProgress
 		}
 	}
 	sort.Sort(&report)
-	utils.RespondEphemeral(resp, createMDTable(report))
+	utils.RespondEphemeral(resp, createMDTable(report, min_lab))
 	if req.Form.Get("text") == "export" {
 		channel, _, err := b.client.CreateDirectChannel(b.user.Id, req.Form.Get("user_id"))
 		if err != nil {
 			utils.RespondEphemeral(resp, "Unable to export!")
 			return
 		}
-		file, _, err := b.client.UploadFile(makeCSV(report), channel.Id, "report.csv")
+		file, _, err := b.client.UploadFile(makeCSV(report, min_lab), channel.Id, "report.csv")
 		if err != nil || len(file.FileInfos) == 0 {
 			utils.RespondEphemeral(resp, "Unable to export!")
 			return
@@ -382,11 +397,11 @@ func (b *Bot) mentorLabs(resp http.ResponseWriter, req *http.Request) {
 	utils.RespondEphemeral(resp, stringBuffer)
 }
 
-func createMDTable(table StudentsMarks) string {
+func createMDTable(table StudentsMarks, min_lab int) string {
 	var markdown string
 	// HEADER
 	markdown += "Name | Tag | "
-	for i := 0; i < table.total_lab_count-2; i++ {
+	for i := min_lab; i < table.total_lab_count; i++ {
 		markdown += fmt.Sprint(i + 1)
 		markdown += " | "
 	}
@@ -416,11 +431,11 @@ func createMDTable(table StudentsMarks) string {
 	return markdown
 }
 
-func makeCSV(table StudentsMarks) []byte {
+func makeCSV(table StudentsMarks, min_lab int) []byte {
 	var csv string
 	// HEADER
 	csv += "Name,Tag,"
-	for i := 0; i < table.total_lab_count-2; i++ {
+	for i := min_lab; i < table.total_lab_count; i++ {
 		csv += fmt.Sprint(i + 1)
 		csv += ","
 	}
