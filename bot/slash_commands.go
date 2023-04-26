@@ -402,7 +402,7 @@ func createMDTable(table StudentsMarks, min_lab int) string {
 	// HEADER
 	markdown += "Name | Tag | "
 	for i := min_lab; i < table.total_lab_count; i++ {
-		markdown += fmt.Sprint(i + 1)
+		markdown += fmt.Sprint(i)
 		markdown += " | "
 	}
 	markdown += fmt.Sprintf("%d\n", table.total_lab_count)
@@ -436,7 +436,7 @@ func makeCSV(table StudentsMarks, min_lab int) []byte {
 	// HEADER
 	csv += "Name,Tag,"
 	for i := min_lab; i < table.total_lab_count; i++ {
-		csv += fmt.Sprint(i + 1)
+		csv += fmt.Sprint(i)
 		csv += ","
 	}
 	csv += "\n"
