@@ -10,9 +10,13 @@ import (
 )
 
 var url = flag.String("url", "", "URL of where the Mattermost server resides")
+var ownUrl = flag.String("ownUrl", "", "URL of this bot")
 var token = flag.String("tok", "", "Bot access token")
 var dburl = flag.String("db", "", "URL to connect to database with")
 var configPath = flag.String("cfg", "config.json", "Config path in filesystem")
+var botUserID = flag.String("uid", "cbeer_lab", "Bot user tag")
+var pchanID = flag.String("pchan", "", "Private channel ID")
+var dchanID = flag.String("dchan", "", "Debug channel ID")
 
 func main() {
 	flag.Parse()
@@ -25,6 +29,6 @@ func main() {
 	config.IntegrationTokens.Init(*configPath)
 	database.DB.Init(*dburl)
 	bot := &bot.Bot{}
-	bot.Init(*url, *token)
+	bot.Init(*url, *ownUrl, *token, *botUserID, *pchanID, *dchanID)
 	select {}
 }

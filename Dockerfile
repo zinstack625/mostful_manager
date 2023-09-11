@@ -6,10 +6,11 @@ COPY go.mod go.sum ./
 RUN go mod download && go mod verify
 
 COPY . .
-RUN go build -v -o /usr/local/bin/mostful-manager &&\
-    cp entrypoint.sh /usr/local/bin/entrypoint.sh &&\
-    mkdir -p /etc/mostful-manager/ &&\
-    cp config.json /etc/mostful-manager/config.json &&\
-    rm -r /usr/src/mostful-manager
+RUN go build -v -o /usr/local/bin/mostful-manager
+
+FROM alpine:latest
+COPY --from=0 /usr/local/bin/mostful-manager /usr/local/bin/
+COPY entrypoint.sh /usr/local/bin/
+COPY config.json.tmpl /etc/mostful-manager/config.json
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

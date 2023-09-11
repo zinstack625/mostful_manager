@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"time"
+	"fmt"
 
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/zinstack625/mostful_manager/database"
@@ -73,7 +74,7 @@ func (b *Bot) approveLab(resp http.ResponseWriter, action *actionObject) {
 		Type: "button",
 		Name: "Disapprove",
 		Integration: &model.PostActionIntegration{
-			URL: "https://zinstack.ru/mmtest/actions",
+			URL: fmt.Sprintf("https://%s/actions", b.ownUrl),
 			Context: map[string]interface{}{
 				"action": map[string]interface{}{
 					"type": "disapprove",
@@ -120,7 +121,7 @@ func (b *Bot) disapproveLab(resp http.ResponseWriter, action *actionObject) {
 		Type: "button",
 		Name: "Approve",
 		Integration: &model.PostActionIntegration{
-			URL: "https://zinstack.ru/mmtest/actions",
+			URL: fmt.Sprintf("https://%s/actions", b.ownUrl),
 			Context: map[string]interface{}{
 				"action": map[string]interface{}{
 					"type": "approve",

@@ -76,7 +76,7 @@ func (b *Bot) checkme(resp http.ResponseWriter, req *http.Request) {
 		Type: "button",
 		Name: "Approve",
 		Integration: &model.PostActionIntegration{
-			URL: "https://zinstack.ru/mmtest/actions",
+			URL: fmt.Sprintf("https://%s/actions", b.ownUrl),
 			Context: map[string]interface{}{
 				"action": map[string]interface{}{
 					"type": "approve",

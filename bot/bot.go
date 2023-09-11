@@ -15,6 +15,7 @@ type Bot struct {
 
 	privatechannelid string
 	debugchannelid   string
+	ownUrl			 string
 }
 
 func (b *Bot) SetupGracefulShutdown() {
@@ -31,20 +32,21 @@ func (b *Bot) SetupGracefulShutdown() {
 	}()
 }
 
-func (b *Bot) Init(url string, token string) {
+func (b *Bot) Init(instanceUrl, ownUrl, token, username, pchanID, dchanID string) {
 	var err error
-	b.wsclient, err = model.NewWebSocketClient4(fmt.Sprintf("wss://%s", url), token)
+	b.wsclient, err = model.NewWebSocketClient4(fmt.Sprintf("wss://%s", instanceUrl), token)
 	if err != nil {
 		panic(err)
 	}
-	b.client = model.NewAPIv4Client(fmt.Sprintf("https://%s", url))
+	b.client = model.NewAPIv4Client(fmt.Sprintf("https://%s", instanceUrl))
 	b.client.SetToken(token)
-	b.user, _, err = b.client.GetUserByUsername("cbeer_lab", "")
+	b.user, _, err = b.client.GetUserByUsername(username, "")
 	if err != nil {
 		panic(err)
 	}
-	b.privatechannelid = "xceb8h8ek3r6tbwmmynae7weba"
-	b.debugchannelid = "7qttrxeyhbb1tei1qa9yn8remy"
+	b.ownUrl = ownUrl
+	b.privatechannelid = dchanID
+	b.debugchannelid = pchanID
 	b.wsclient.Listen()
 	go func() {
 		for resp := range b.wsclient.EventChannel {
