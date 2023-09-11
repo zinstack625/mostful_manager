@@ -202,3 +202,8 @@ func (d *_db) CheckAdmin(ctx context.Context, adm *Admin) (bool, error) {
 	cnt, err := d.db.NewSelect().Model((*Admin)(nil)).WhereOr("MMST_ID = ?", adm.MmstID).WhereOr("TAG = ?", adm.Tag).Count(ctx)
 	return cnt > 0, err
 }
+
+func (d *_db) CheckConnection(ctx context.Context) error {
+	_, err := d.db.ExecContext(ctx, "SELECT 1")
+	return err
+}

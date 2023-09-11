@@ -1,11 +1,12 @@
 package bot
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/signal"
 
-	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost/server/public/model"
 )
 
 type Bot struct {
@@ -40,7 +41,7 @@ func (b *Bot) Init(instanceUrl, ownUrl, token, username, pchanID, dchanID string
 	}
 	b.client = model.NewAPIv4Client(fmt.Sprintf("https://%s", instanceUrl))
 	b.client.SetToken(token)
-	b.user, _, err = b.client.GetUserByUsername(username, "")
+	b.user, _, err = b.client.GetUserByUsername(context.Background(), username, "")
 	if err != nil {
 		panic(err)
 	}

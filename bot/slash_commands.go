@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/zinstack625/mostful_manager/config"
 	"github.com/zinstack625/mostful_manager/database"
 	"github.com/zinstack625/mostful_manager/utils"
@@ -198,7 +198,7 @@ func (b *Bot) myLabs(resp http.ResponseWriter, req *http.Request) {
 		report.students[0].labs[j] = NotReady
 	}
 	if stud.RealName == nil {
-		user, _, err := b.client.GetUsersByIds([]string{stud.MmstID})
+		user, _, err := b.client.GetUsersByIds(context.Background(), []string{stud.MmstID})
 		if err != nil && len(user) > 0 {
 			report.students[0].name = user[0].GetFullName()
 		} else {
@@ -315,7 +315,7 @@ func (b *Bot) labs(resp http.ResponseWriter, req *http.Request) {
 			report.students[i].labs[j] = NotReady
 		}
 		if v.RealName == nil {
-			user, _, err := b.client.GetUsersByIds([]string{v.MmstID})
+			user, _, err := b.client.GetUsersByIds(context.Background(), []string{v.MmstID})
 			if err != nil && len(user) > 0 {
 				report.students[i].name = user[0].GetFullName()
 			} else {
@@ -335,12 +335,12 @@ func (b *Bot) labs(resp http.ResponseWriter, req *http.Request) {
 	sort.Sort(&report)
 	utils.RespondEphemeral(resp, createMDTable(report, min_lab))
 	if req.Form.Get("text") == "export" {
-		channel, _, err := b.client.CreateDirectChannel(b.user.Id, req.Form.Get("user_id"))
+		channel, _, err := b.client.CreateDirectChannel(context.Background(), b.user.Id, req.Form.Get("user_id"))
 		if err != nil {
 			utils.RespondEphemeral(resp, "Unable to export!")
 			return
 		}
-		file, _, err := b.client.UploadFile(makeCSV(report, min_lab), channel.Id, "report.csv")
+		file, _, err := b.client.UploadFile(context.Background(), makeCSV(report, min_lab), channel.Id, "report.csv")
 		if err != nil || len(file.FileInfos) == 0 {
 			utils.RespondEphemeral(resp, "Unable to export!")
 			return
@@ -349,7 +349,7 @@ func (b *Bot) labs(resp http.ResponseWriter, req *http.Request) {
 			ChannelId: channel.Id,
 			FileIds:   []string{file.FileInfos[0].Id},
 		}
-		_, _, err = b.client.CreatePost(&post)
+		_, _, err = b.client.CreatePost(context.Background(), &post)
 		if err != nil {
 			utils.RespondEphemeral(resp, "Unable to export!")
 			return
@@ -514,5 +514,6 @@ func (b *Bot) SetupWebHooks() {
 	http.HandleFunc("/labs", b.labs)
 	http.HandleFunc("/setstudname", b.setStudName)
 	http.HandleFunc("/mentorlabs", b.mentorLabs)
+	http.HandleFunc("/ruok", b.selfCheck)
 	go http.ListenAndServe("0.0.0.0:5000", nil)
 }

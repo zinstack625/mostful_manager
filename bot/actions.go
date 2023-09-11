@@ -9,7 +9,7 @@ import (
 	"time"
 	"fmt"
 
-	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/zinstack625/mostful_manager/database"
 )
 
@@ -86,7 +86,7 @@ func (b *Bot) approveLab(resp http.ResponseWriter, action *actionObject) {
 	attachment := model.SlackAttachment{
 		Actions: []*model.PostAction{&postAction},
 	}
-	op, _, _ := b.client.GetPost(action.OriginalMessageID, "")
+	op, _, _ := b.client.GetPost(context.Background(), action.OriginalMessageID, "")
 	post := model.Post{
 		Message: op.Message,
 	}
@@ -133,7 +133,7 @@ func (b *Bot) disapproveLab(resp http.ResponseWriter, action *actionObject) {
 	attachment := model.SlackAttachment{
 		Actions: []*model.PostAction{&postAction},
 	}
-	op, _, _ := b.client.GetPost(action.OriginalMessageID, "")
+	op, _, _ := b.client.GetPost(context.Background(), action.OriginalMessageID, "")
 	post := model.Post{
 		Message: op.Message,
 	}
@@ -144,4 +144,18 @@ func (b *Bot) disapproveLab(resp http.ResponseWriter, action *actionObject) {
 	}
 	updatejson, _ := json.Marshal(update)
 	resp.Write(updatejson)
+}
+
+func (b *Bot) selfCheck(resp http.ResponseWriter, req *http.Request) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3 * time.Second)
+	defer cancel()
+	err := database.DB.CheckConnection(ctx)
+	if err != nil {
+		resp.WriteHeader(500)
+		resp.Write([]byte("db broken, fixme!"))
+		log.Printf("THE SPY IS IN THE BASE! DATABASE BROKEN! FIXUP QUICK! %s", err.Error())
+		return
+	}
+	resp.WriteHeader(200)
+	resp.Write([]byte("imok"))
 }

@@ -1,11 +1,13 @@
 package utils
 
 import (
+	"context"
 	"encoding/json"
 	"net"
 	"net/http"
+	"time"
 
-	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost/server/public/model"
 )
 
 func GetMyIP() (net.Addr, error) {
@@ -24,7 +26,9 @@ func RespondEphemeral(resp http.ResponseWriter, text string) {
 }
 
 func SendDM(bot_id string, user_id string, msg string, attachments []*model.SlackAttachment, client *model.Client4) error {
-	dm, _, err := client.CreateDirectChannel(bot_id, user_id)
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel()
+	dm, _, err := client.CreateDirectChannel(ctx, bot_id, user_id)
 	if err != nil {
 		return err
 	}
@@ -35,6 +39,6 @@ func SendDM(bot_id string, user_id string, msg string, attachments []*model.Slac
 	if attachments != nil {
 		postdmstud.AddProp("attachments", attachments)
 	}
-	_, _, err = client.CreatePost(&postdmstud)
+	_, _, err = client.CreatePost(ctx, &postdmstud)
 	return err
 }
