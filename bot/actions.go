@@ -3,11 +3,11 @@ package bot
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"time"
-	"fmt"
 
 	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/zinstack625/mostful_manager/database"
@@ -33,7 +33,7 @@ func (b *Bot) dispatchActions(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	body, err := ioutil.ReadAll(req.Body)
+	body, err := io.ReadAll(req.Body)
 	var requestBody model.PostActionIntegrationRequest
 	err = json.Unmarshal(body, &requestBody)
 	actionCtx := actionObject{
@@ -74,7 +74,7 @@ func (b *Bot) approveLab(resp http.ResponseWriter, action *actionObject) {
 		Type: "button",
 		Name: "Disapprove",
 		Integration: &model.PostActionIntegration{
-			URL: fmt.Sprintf("https://%s/actions", b.ownUrl),
+			URL: fmt.Sprintf("%s/actions", b.ownUrl),
 			Context: map[string]interface{}{
 				"action": map[string]interface{}{
 					"type": "disapprove",
@@ -121,7 +121,7 @@ func (b *Bot) disapproveLab(resp http.ResponseWriter, action *actionObject) {
 		Type: "button",
 		Name: "Approve",
 		Integration: &model.PostActionIntegration{
-			URL: fmt.Sprintf("https://%s/actions", b.ownUrl),
+			URL: fmt.Sprintf("%s/actions", b.ownUrl),
 			Context: map[string]interface{}{
 				"action": map[string]interface{}{
 					"type": "approve",

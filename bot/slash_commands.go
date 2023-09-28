@@ -30,7 +30,7 @@ func (b *Bot) checkme(resp http.ResponseWriter, req *http.Request) {
 	}
 	labUrl := req.Form.Get("text")
 	if ok, err := regexp.Match("^https://github.com/.*/(?:(?:[0-9]{2}-lab-[0-9]{2}-.*)|(?:lab-test-[0-9]{1}-.*))/pull/[0-9]{1,}$", []byte(labUrl)); err == nil && !ok {
-		utils.RespondEphemeral(resp, "Does not seem like a lab we check! Make sure the URL is in form of \"https://github.com/bmstu-cbeer-20**/**-lab-**-YourName/1\"")
+		utils.RespondEphemeral(resp, "Does not seem like a lab we check! Make sure the URL is in form of \"https://github.com/bmstu-cbeer-20**/**-lab-**-YourName/pull/1\"")
 		return
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -76,7 +76,7 @@ func (b *Bot) checkme(resp http.ResponseWriter, req *http.Request) {
 		Type: "button",
 		Name: "Approve",
 		Integration: &model.PostActionIntegration{
-			URL: fmt.Sprintf("https://%s/actions", b.ownUrl),
+			URL: fmt.Sprintf("%s/actions", b.ownUrl),
 			Context: map[string]interface{}{
 				"action": map[string]interface{}{
 					"type": "approve",
